@@ -10,6 +10,8 @@ const CONTACTS = [...Array(30)].map((_, i) => ({
 const windowWidth = Dimensions.get('window').width
 const isAndroid = Platform.OS === 'android'
 
+const GESTURE_FACTOR = 1.5
+
 class ListItem extends React.Component {
   state = {
     dragging: false,
@@ -78,8 +80,7 @@ class ListItem extends React.Component {
   }
 
   isDragComplete = (gestureState) => {
-    console.log(gestureState)
-    return Math.abs(gestureState.dx) > windowWidth * 0.6;
+    return Math.abs(gestureState.dx * GESTURE_FACTOR) > windowWidth * 0.6;
   }
 
 
@@ -97,15 +98,13 @@ class ListItem extends React.Component {
       duration: ANIMATION_DURATION,
       // useNativeDriver: true,
     })
+
+    this.props.onSwipeRelease && this.props.onSwipeRelease()
+    drawerAnimation.start()
+
     if (this.isDragComplete(gestureState)) {
       outAnimation.start(() => this.props.onSwipeComplete(this.props.id))
-      // Animated.parallel([outAnimation, drawerAnimation]).start(() => {
-      //   this.props.onSwipeRelease && this.props.onSwipeRelease()
-        
-      // })
     }
-    drawerAnimation.start()
-    this.props.onSwipeRelease()
 
     this.setState({
       dragging: false,
@@ -166,7 +165,10 @@ class ListItem extends React.Component {
      */
     const drawerViewAnimatedStyle = {
       transform: [
-        {translateX: this.state.pan.x}
+        {translateX: this.state.pan.x.interpolate({
+          inputRange: [0, windowWidth],
+          outputRange: [0, windowWidth * GESTURE_FACTOR]
+        })}
       ],
     }
 
