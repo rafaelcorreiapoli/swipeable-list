@@ -15,7 +15,7 @@ const ROW_HEIGHT = 80
 const COMPLETE_FACTOR = 0.6
 const COMPLETE_COLOR = 'rgba(192, 57, 43, 1.0)'
 const STARTING_COLOR = 'rgba(192, 57, 43, 0.1)'
-const ANIMATED_BACKGROUND_COLOR = true
+const ANIMATED_BACKGROUND_COLOR = false
 
 class ListItem extends React.Component {
   state = {
@@ -332,6 +332,8 @@ export default class App extends Component {
     return (
       <View style={styles.container}>
         <FlatList
+          bounces={false}
+          alwaysBounceVertical={false}
           style={styles.flatList}
           data={this.state.contacts.filter(contact => !this.state.deletedContacts[contact.key])}
           renderItem={this.renderItem}
