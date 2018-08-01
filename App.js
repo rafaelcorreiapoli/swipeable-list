@@ -145,17 +145,18 @@ class ListItem extends React.Component {
       ],
     }
 
+    const wrapperViewStyle = { height, opacity } 
+    const listItemViewStyle = [styles.contactWrapper, { backgroundColor }]
+    const drawerWrapperViewStyle = [drawerViewAnimatedStyle, styles.deleteView]
+    
     return (
-      <Animated.View style={{ height, opacity }}>
-        <View
-          style={[styles.contactWrapper, { backgroundColor }]}
-          {...this.panResponder.panHandlers}
-        >
+      <Animated.View style={wrapperViewStyle}>
+        <View style={listItemViewStyle} {...this.panResponder.panHandlers}>
           <TouchableOpacity onPress={this.handlePress}>
             <Text>{name}</Text>
           </TouchableOpacity>
         </View>
-        <Animated.View style={[drawerViewAnimatedStyle, styles.deleteView]}/>
+        <Animated.View style={drawerWrapperViewStyle} />
       </Animated.View>
       
     )
@@ -279,12 +280,7 @@ export default class App extends Component {
    */
   renderSeparator = () => {
     return (
-      <View
-        style={{
-          height: StyleSheet.hairlineWidth,
-          backgroundColor: "#000",
-        }}
-      />
+      <View style={styles.separator} />
     );
   }
 
@@ -296,7 +292,7 @@ export default class App extends Component {
     return (
       <View style={styles.container}>
         <FlatList
-          style={{backgroundColor: '#c3c3c3', flex: 1}}
+          style={styles.flatList}
           data={this.state.contacts.filter(contact => !this.state.deletedContacts[contact.key])}
           renderItem={this.renderItem}
           ItemSeparatorComponent={this.renderSeparator}
@@ -344,5 +340,13 @@ const styles = StyleSheet.create({
   contactWrapper: {
     flex: 1,
     justifyContent: 'center',
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#000",
+  },
+  flatList: {
+    backgroundColor: '#c3c3c3',
+    flex: 1
   }
 });
