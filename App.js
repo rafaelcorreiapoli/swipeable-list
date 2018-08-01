@@ -11,6 +11,11 @@ const windowWidth = Dimensions.get('window').width
 const isAndroid = Platform.OS === 'android'
 
 const GESTURE_FACTOR = 1.5
+const ROW_HEIGHT = 80
+const COMPLETE_FACTOR = 0.6
+const COMPLETE_COLOR = 'rgba(192, 57, 43, 1.0)'
+const STARTING_COLOR = 'rgba(192, 57, 43, 0.1)'
+const ANIMATED_BACKGROUND_COLOR = true
 
 class ListItem extends React.Component {
   state = {
@@ -80,7 +85,7 @@ class ListItem extends React.Component {
   }
 
   isDragComplete = (gestureState) => {
-    return Math.abs(gestureState.dx * GESTURE_FACTOR) > windowWidth * 0.6;
+    return Math.abs(gestureState.dx * GESTURE_FACTOR) > windowWidth * COMPLETE_FACTOR;
   }
 
 
@@ -90,13 +95,12 @@ class ListItem extends React.Component {
       toValue: { x: 0, y: 0 },
       duration: ANIMATION_DURATION,
       easing: Easing.elastic(0.5),
-      useNativeDriver: true,
+      useNativeDriver: !ANIMATED_BACKGROUND_COLOR,
     })
   
     const outAnimation = Animated.timing(this.state.inAndOut, {
       toValue: 0,
       duration: ANIMATION_DURATION,
-      // useNativeDriver: true,
     })
 
     this.props.onSwipeRelease && this.props.onSwipeRelease()
@@ -125,7 +129,6 @@ class ListItem extends React.Component {
       Animated.timing(this.state.inAndOut, {
         toValue: 1,
         duration: ANIMATION_DURATION,
-        useNativeDriver: true,
       }).start()
     } else {
       this.props.onMount(this.props.id)
@@ -146,13 +149,19 @@ class ListItem extends React.Component {
      */
     const height = this.state.inAndOut.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, 80],
+      outputRange: [0, ROW_HEIGHT],
       extrapolate: 'clamp'
     })
     const opacity = this.state.inAndOut.interpolate({
       inputRange: [0, 1],
       outputRange: [0, 1],
     })
+
+    const animatedRed = ANIMATED_BACKGROUND_COLOR ? this.state.pan.x.interpolate({
+      inputRange: [-windowWidth * (COMPLETE_FACTOR / GESTURE_FACTOR), 0],
+      outputRange: [COMPLETE_COLOR, STARTING_COLOR],
+      extrapolate: 'clamp'
+    }) : COMPLETE_COLOR
 
     /**
      * The background color changes if the user is dragging,
@@ -174,7 +183,7 @@ class ListItem extends React.Component {
 
     const wrapperViewStyle = { height, opacity } 
     const listItemViewStyle = [styles.contactWrapper, { backgroundColor }]
-    const drawerWrapperViewStyle = [drawerViewAnimatedStyle, styles.deleteView]
+    const drawerWrapperViewStyle = [drawerViewAnimatedStyle, styles.deleteView, { backgroundColor: animatedRed}]
     
     return (
       <Animated.View style={wrapperViewStyle}>
