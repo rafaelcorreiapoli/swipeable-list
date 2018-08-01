@@ -23,12 +23,12 @@ class ListItem extends React.Component {
    */
   handlePan = Animated.event([
     null,
-    {dx: this.state.pan.x}
+    { dx: this.state.pan.x }
   ])
   
   constructor(props) {
     super(props)
-    this.inAndOut = new Animated.Value(props.shouldAnimateOnMount ? 0 : 1)
+    this.state.inAndOut = new Animated.Value(props.shouldAnimateOnMount ? 0 : 1)
 
     this.panResponder = PanResponder.create({
       onMoveShouldSetPanResponder: this.handleMoveShouldSetPanResponder,
@@ -75,15 +75,34 @@ class ListItem extends React.Component {
     this.handlePan(ev, gestureState)
   }
 
-  handleSwipeRelease = (ev, gestureState) => {
+  isDragComplete = (gestureState) => {
+    console.log(gestureState)
+    return Math.abs(gestureState.dx) > windowWidth * 0.6;
+  }
+
+
+
+  handleSwipeRelease = (ev, gestureState) => {    
+    const drawerAnimation = Animated.timing(this.state.pan, {
+      toValue: { x: 0, y: 0 },
+      duration: ANIMATION_DURATION,
+      easing: Easing.elastic(0.5)
+    })
+  
+    const outAnimation = Animated.timing(this.state.inAndOut, {
+      toValue: 0,
+      duration: ANIMATION_DURATION
+    })
+    if (this.isDragComplete(gestureState)) {
+      Animated.parallel([outAnimation, drawerAnimation]).start(() => {
+        this.props.onSwipeRelease()
+        this.props.onSwipeComplete(this.props.id)
+      })
+    } else {
+      drawerAnimation.start()
+    }
     this.setState({
       dragging: false,
-    }, () => {
-      Animated.timing(this.state.pan, {
-        toValue: { x: 0, y: 0 },
-        duration: ANIMATION_DURATION,
-        easing: Easing.elastic(0.5)
-      }).start(this.props.onSwipeRelease);  
     })
     
   }
@@ -98,10 +117,10 @@ class ListItem extends React.Component {
    */
   componentDidMount() {
     if (this.props.shouldAnimateOnMount) {
-      Animated.timing(this.inAndOut, {
+      Animated.timing(this.state.inAndOut, {
         toValue: 1,
         duration: ANIMATION_DURATION
-      }).start()  
+      }).start()
     } else {
       this.props.onMount(this.props.id)
     }
@@ -119,12 +138,12 @@ class ListItem extends React.Component {
     /**
      * Animate the height and opacity upon entering (if is coming back) or leaving
      */
-    const height = this.inAndOut.interpolate({
+    const height = this.state.inAndOut.interpolate({
       inputRange: [0, 1],
       outputRange: [0, 50],
       extrapolate: 'clamp'
     })
-    const opacity = this.inAndOut.interpolate({
+    const opacity = this.state.inAndOut.interpolate({
       inputRange: [0, 1],
       outputRange: [0, 1],
     })
@@ -134,7 +153,6 @@ class ListItem extends React.Component {
      * so we can give the user a feedback that the item has the pan control
      */
     const backgroundColor = this.state.dragging ? '#a1a1a1' : '#d3d3d3'
-
 
     /**
      * The thing that we are dragging must have a translateX equals to the pan.x
@@ -148,7 +166,7 @@ class ListItem extends React.Component {
     const wrapperViewStyle = { height, opacity } 
     const listItemViewStyle = [styles.contactWrapper, { backgroundColor }]
     const drawerWrapperViewStyle = [drawerViewAnimatedStyle, styles.deleteView]
-    
+
     return (
       <Animated.View style={wrapperViewStyle}>
         <View style={listItemViewStyle} {...this.panResponder.panHandlers}>
@@ -244,15 +262,20 @@ export default class App extends Component {
     })
   }
 
+  handleSwipeComplete = (contactId) => {
+    this.handleDelete(contactId)
+  }
+
   /**
    * On Android we don't need to notify the list that the drag started
    * onShouldBlockNativeResponder will take care of disabling Flatlist`s vertical scroll
    */
   swipeHandlers = Platform.select({
     android: {
-      
+      onSwipeComplete: this.handleSwipeComplete,
     },
     ios: {
+      onSwipeComplete: this.handleSwipeComplete,
       onSwipeStart: this.handleSwipeStart,
       onSwipeRelease: this.handleSwipeRelease,
     }
@@ -288,7 +311,6 @@ export default class App extends Component {
    * render
    */
   render() {
-    console.warn('rerendering list ')
     return (
       <View style={styles.container}>
         <FlatList
