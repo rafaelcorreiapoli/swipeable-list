@@ -20,10 +20,12 @@ class ListItem extends React.Component {
 
   /**
    * A function that maps the gesture dx to pan.x
+   * We are not using nativeDriver here because:
+   * https://facebook.github.io/react-native/blog/2017/02/14/using-native-driver-for-animated.html#caveats
    */
   handlePan = Animated.event([
     null,
-    { dx: this.state.pan.x }
+    { dx: this.state.pan.x },
   ])
   
   constructor(props) {
@@ -53,7 +55,7 @@ class ListItem extends React.Component {
    * Here we decide what is considered a swipe left
    */
   handleMoveShouldSetPanResponder = (ev, gestureState) => {
-    return Math.abs(gestureState.dx) > 0
+    return Math.abs(gestureState.dx) > 2 && Math.abs(gestureState.dy) < 6
   }
 
   /**
@@ -86,21 +88,25 @@ class ListItem extends React.Component {
     const drawerAnimation = Animated.timing(this.state.pan, {
       toValue: { x: 0, y: 0 },
       duration: ANIMATION_DURATION,
-      easing: Easing.elastic(0.5)
+      easing: Easing.elastic(0.5),
+      useNativeDriver: true,
     })
   
     const outAnimation = Animated.timing(this.state.inAndOut, {
       toValue: 0,
-      duration: ANIMATION_DURATION
+      duration: ANIMATION_DURATION,
+      // useNativeDriver: true,
     })
     if (this.isDragComplete(gestureState)) {
-      Animated.parallel([outAnimation, drawerAnimation]).start(() => {
-        this.props.onSwipeRelease()
-        this.props.onSwipeComplete(this.props.id)
-      })
-    } else {
-      drawerAnimation.start()
+      outAnimation.start(() => this.props.onSwipeComplete(this.props.id))
+      // Animated.parallel([outAnimation, drawerAnimation]).start(() => {
+      //   this.props.onSwipeRelease && this.props.onSwipeRelease()
+        
+      // })
     }
+    drawerAnimation.start()
+    this.props.onSwipeRelease()
+
     this.setState({
       dragging: false,
     })
@@ -119,7 +125,8 @@ class ListItem extends React.Component {
     if (this.props.shouldAnimateOnMount) {
       Animated.timing(this.state.inAndOut, {
         toValue: 1,
-        duration: ANIMATION_DURATION
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
       }).start()
     } else {
       this.props.onMount(this.props.id)
@@ -140,7 +147,7 @@ class ListItem extends React.Component {
      */
     const height = this.state.inAndOut.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, 50],
+      outputRange: [0, 80],
       extrapolate: 'clamp'
     })
     const opacity = this.state.inAndOut.interpolate({
@@ -166,7 +173,7 @@ class ListItem extends React.Component {
     const wrapperViewStyle = { height, opacity } 
     const listItemViewStyle = [styles.contactWrapper, { backgroundColor }]
     const drawerWrapperViewStyle = [drawerViewAnimatedStyle, styles.deleteView]
-
+    
     return (
       <Animated.View style={wrapperViewStyle}>
         <View style={listItemViewStyle} {...this.panResponder.panHandlers}>
@@ -321,10 +328,10 @@ export default class App extends Component {
           ListFooterComponent={this.renderSeparator}
           scrollEnabled={isAndroid || !this.state.swiping}
         />
-        <DeletedContacts
+        {/* <DeletedContacts
           deletedContactsId={this.state.deletedContacts}
           onRestoreContactId={this.restoreContact}
-        />
+        /> */}
       </View>
     );
   }
